@@ -1,10 +1,10 @@
+// package main contains the starting point of grpc Chat server
 package main
 
 import (
 	"context"
 	"fmt"
 	"log"
-	"math/rand"
 	"net"
 
 	desc "github.com/mihailtudos/microservices/chat/pkg/chat_v1"
@@ -19,8 +19,8 @@ type server struct {
 	desc.UnimplementedChatV1Server
 }
 
-func (s *server) Create(ctx context.Context, req *desc.CreateRequest) (*desc.CreateResponse, error) {
-	chatID := int64(rand.Int())
+func (s *server) Create(_ context.Context, req *desc.CreateRequest) (*desc.CreateResponse, error) {
+	chatID := int64(12)
 	log.Printf("chat %d added users: %#v\n\n", chatID, req.GetUsernames())
 
 	return &desc.CreateResponse{

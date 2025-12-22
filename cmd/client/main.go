@@ -1,3 +1,4 @@
+// package main contains the starting point of grpc Chat client
 package main
 
 import (
@@ -21,7 +22,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to connect to server: %s", err)
 	}
-	defer conn.Close()
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}()
 
 	c := desc.NewChatV1Client(conn)
 

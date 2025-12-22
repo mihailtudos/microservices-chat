@@ -61,6 +61,3 @@ jobs:
 
           # Optional: The mode to install golangci-lint. It can be 'binary' or 'goinstall'.
           # install-mode: "goinstall"
-      - name: run version
-        run: |
-            golangci-lint --version
