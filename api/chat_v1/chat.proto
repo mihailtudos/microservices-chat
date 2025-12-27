@@ -26,11 +26,11 @@ message CreateRequest {
 }
 
 message CreateResponse {
-  int64 id = 1;
+  string id = 1;
 }
 
 message DeleteRequest {
-  int64 id = 1;
+  string id = 1;
 }
 
 message SendMessageRequest {
