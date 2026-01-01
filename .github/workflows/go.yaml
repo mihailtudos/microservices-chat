@@ -71,10 +71,7 @@ jobs:
             host: ${{ secrets.REMOTE_HOST }}
             username: ${{ secrets.REMOTE_USER }}
             key: ${{ secrets.SSH_PRIVATE_KEY }}
-            source: |
-              docker-compose.yml
-              docker-compose.prod.yml
-              Taskfile.yml
+            source: "docker-compose.yml,docker-compose.prod.yml,Taskfile.yml"
             target: "/home/${{ secrets.REMOTE_USER }}/chat"
 
       - name: Deploy to Server via SSH
