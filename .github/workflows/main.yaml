@@ -13,39 +13,29 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
-      - name: Install Task
-        run: |
-          sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
-      
-      - name: Install protoc
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y protobuf-compiler
 
-      - name: Install sqlc
-        run: |
-          curl -L https://github.com/sqlc-dev/sqlc/releases/download/v1.27.0/sqlc_1.27.0_linux_amd64.tar.gz -o sqlc.tar.gz
-          tar -xzf sqlc.tar.gz
-          sudo mv sqlc /usr/local/bin/
-          sqlc version
+      - name: Setup Task
+        uses: arduino/setup-task@v1
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Download Go modules
         run: go mod download
-
-      - name: Generate gRPC files
-        run: ~/.local/bin/task generate
       
-      - name: Generate SQLC files
-        run: ~/.local/bin/task gen:sql
+      - name: Generate grpc and sqcl files
+        run: task generate
 
       - name: Test
-        run: go test -v ./...
+        run: task test
+
       - name: Build
-        run: go build -o ./bin/ -v ./...
+        run: task build:app
 
       - name: Upload generated files
         uses: actions/upload-artifact@v4
@@ -55,12 +45,29 @@ jobs:
             pkg/chat_v1/
             internal/db/
           retention-days: 1
-    # uses: mihailtudos/actions/.github/workflows/go-ci.yml@v1.0.3
-  deploy:
+  push-image:
     needs: test-and-build
     # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    # uses: mihailtudos/actions/.github/workflows/go-cd.yml@v1.0.3
-    # secrets: inherit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Download generated code
+        uses: actions/download-artifact@v3
+        with: 
+          name: generated-files
+      
+      - name: Setup Task
+        uses: arduino/setup-task@v1
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        run: task docker:push
+
+  deploy:
+    needs: [test-and-build, push-image]
+    # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
