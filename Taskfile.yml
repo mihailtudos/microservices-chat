@@ -13,8 +13,8 @@ vars:
   GOOSE_MIGRATION_DIR: "internal/migrations"
   # Mapping the docker-compose files based on environment
   COMPOSE_FILES: >-
-    -f docker-compose.yaml 
-    {{if eq .ENV "prod"}}-f docker-compose.prod.yaml{{end}}
+    -f docker-compose.yml 
+    {{if eq .ENV "prod"}}-f docker-compose.prod.yml{{end}}
 
 tasks:
   debug:vars:

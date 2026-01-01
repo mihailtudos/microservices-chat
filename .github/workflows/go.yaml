@@ -64,6 +64,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
+      - name: Upload Docker compose files
+        run: |
+            rsync -avz \
+            docker-compose.yml \
+            docker-compose.prod.yml \
+            Taskfile.yml \
+            ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }}:/home/${{ secrets.REMOTE_USER }}/chat
+
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
