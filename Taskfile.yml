@@ -159,7 +159,7 @@ tasks:
       - internal/sqlc.yaml
       - internal/migrations/*.sql
     generates:
-      - internal/db/*.go # Adjust to your sqlc output path
+      - internal/db/*.go
     cmds:
       - sqlc generate -f ./internal/sqlc.yaml
 
