@@ -21,8 +21,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const grpcPort = 50052
-
 type server struct {
 	desc.UnimplementedChatV1Server
 	db      *pgxpool.Pool
@@ -84,6 +82,9 @@ func setupDB(ctx context.Context) (*pgxpool.Pool, error) {
 }
 
 func main() {
+	if os.Getenv("PORT") == "" {
+		log.Fatal("port not provided\n")
+	}
 	ctx := context.Background()
 
 	db, err := setupDB(ctx)
@@ -93,7 +94,7 @@ func main() {
 
 	queries := chat.New(db)
 
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", os.Getenv("PORT")))
 	if err != nil {
 		log.Fatalf("failed to listen: %s", err)
 	}
@@ -108,7 +109,7 @@ func main() {
 
 	desc.RegisterChatV1Server(s, server)
 
-	log.Printf("server listening at %s", lis.Addr())
+	log.Printf("server listening at %s - %s", lis.Addr(), os.Getenv("PORT"))
 
 	if err = s.Serve(lis); err != nil {
 		log.Fatal("failed to serve: ", err)

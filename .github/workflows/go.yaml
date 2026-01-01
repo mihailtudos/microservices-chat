@@ -13,6 +13,27 @@ jobs:
     uses: mihailtudos/actions/.github/workflows/go-ci.yml@v1.0.3
   deploy:
     needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    uses: mihailtudos/actions/.github/workflows/go-cd.yml@v1.0.3
-    secrets: inherit
+    # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # uses: mihailtudos/actions/.github/workflows/go-cd.yml@v1.0.3
+    # secrets: inherit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Deploy to Server via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: GOOSE_DBSTRING,GOOSE_DRIVER,PORT
+          script: |
+            cd /home/${{ secrets.SERVER_USER }}/chat
+            echo "GOOSE_DBSTRING=\"$GOOSE_DBSTRING\"" > .env.prod
+            echo "GOOSE_DRIVER=$GOOSE_DRIVER" >> .env.prod
+            echo "PORT=$PORT" >> .env.prod
+
+            ENV=prod task docker:prod:up
+        env:
+          GOOSE_DBSTRING: ${{ secrets.GOOSE_DBSTRING }}
+          GOOSE_DRIVER: ${{ secrets.GOOSE_DRIVER }}
+          PORT: ${{ secrets.PORT }}
