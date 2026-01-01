@@ -8,8 +8,33 @@ on:
   workflow_dispatch:
 
 jobs:
-  # 1. Run Tests (runs on both PRs and Pushes to main)
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+      - name: Install Task
+        run: |
+          sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b ~/.local/bin
+      - name: Install protoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+      - name: Generate gRPC files
+        run: ~/.local/bin/task generate
+
+      - name: Upload generated files
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-grpc
+          path: pkg/chat_v1/
+          retention-days: 1
   test:
+    needs: generate
     uses: mihailtudos/actions/.github/workflows/go-ci.yml@v1.0.3
   deploy:
     needs: test
