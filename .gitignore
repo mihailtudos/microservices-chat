@@ -1,2 +1,5 @@
 .idea
 /bin/
+
+*.gen.go
+/pkg/chat_v1/*
