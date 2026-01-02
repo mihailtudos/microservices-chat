@@ -43,7 +43,7 @@ jobs:
           name: generated-files
           path: |
             pkg/chat_v1/
-            internal/db/
+            internal/chat/
           retention-days: 1
   push-image:
     needs: test-and-build
