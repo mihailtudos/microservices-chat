@@ -5,9 +5,15 @@ version: "3"
 dotenv:
   - .env.{{.ENV | default "local"}}
 
+env:
+  PATH: '{{.PWD}}/{{.LOCAL_BIN}}:{{.PATH}}'
+
 vars:
   ENV: '{{.ENV | default "local"}}'
   LOCAL_BIN: "./bin"
+  PROTOC_VERSION: 33.2
+  OS: '{{OS}}'
+  ARCH: '{{ARCH}}'
   IMAGE_NAME: "tudosm/chat"
   TAG: "latest"
   GOOSE_MIGRATION_DIR: "internal/migrations"
@@ -20,7 +26,7 @@ tasks:
   debug:vars:
     desc: Print specific variables for debugging
     cmds:
-      - echo "Current Environment is {{.ENV}}"
+      - echo "Current Environment is {{.ENV}} {{.OS}} {{.ARCH}}"
       - echo "Database String is {{.GOOSE_DBSTRING}}"
       - echo "Compose file {{.COMPOSE_FILES}}"
 
@@ -31,6 +37,22 @@ tasks:
     cmds:
       - mkdir -p {{.LOCAL_BIN}}
       - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b {{.LOCAL_BIN}}
+
+  install:protoc:
+    desc: Download protoc binary locally
+    status:
+      - test -f {{.LOCAL_BIN}}/protoc
+    vars:
+      PROTOC_ARCH: '{{if eq .ARCH "amd64"}}x86_64{{else if eq .ARCH "arm64"}}aarch_64{{else}}{{.ARCH}}{{end}}'
+      PROTOC_OS: '{{if eq .OS "darwin"}}osx{{else if eq .OS "linux"}}linux{{else}}win64{{end}}'
+      URL: https://github.com/protocolbuffers/protobuf/releases/download/v{{.PROTOC_VERSION}}/protoc-{{.PROTOC_VERSION}}-{{.PROTOC_OS}}-{{.PROTOC_ARCH}}.zip
+    cmds:
+      - mkdir -p {{.LOCAL_BIN}} .bin
+      - curl -L {{.URL}} -o protoc.zip
+      - unzip -o protoc.zip bin/protoc include/* -d .
+      - mv -f include {{.LOCAL_BIN}}/include
+      - rm -rf protoc.zip .bin/ include/
+      - chmod +x {{.LOCAL_BIN}}/protoc
 
   install:goose:
     desc: Install goose
@@ -48,7 +70,7 @@ tasks:
       - mkdir -p {{.LOCAL_BIN}}
       - GOBIN={{.PWD}}/{{.LOCAL_BIN}} go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 
-  install:protoc:
+  install:protoc-plugs:
     desc: Install project dependencies
     status:
       - test -f {{.LOCAL_BIN}}/protoc-gen-go
@@ -80,7 +102,7 @@ tasks:
 
   gen:grpc:
     desc: Generates gRPC chat API
-    deps: [install:protoc]
+    deps: [install:protoc, install:protoc-plugs]
     sources:
       - api/chat_v1/chat.proto
       # ...against these files. If sources are newer, it runs.
@@ -90,7 +112,7 @@ tasks:
     cmds:
       - mkdir -p pkg/chat_v1
       - |
-        protoc --proto_path api/chat_v1 \
+        PATH="{{.PWD}}/{{.LOCAL_BIN}}:$PATH" {{.LOCAL_BIN}}/protoc --proto_path api/chat_v1 \
           --go_out=pkg/chat_v1 --go_opt=paths=source_relative \
           --plugin=protoc-gen-go=bin/protoc-gen-go \
           --go-grpc_out=pkg/chat_v1 --go-grpc_opt=paths=source_relative \
@@ -174,7 +196,7 @@ tasks:
     generates:
       - internal/db/*.go
     cmds:
-      - sqlc generate -f ./internal/sqlc.yaml
+      - "{{.LOCAL_BIN}}/sqlc generate -f ./internal/sqlc.yaml"
 
   clean:
     desc: Remove all generated files and the bin folder
